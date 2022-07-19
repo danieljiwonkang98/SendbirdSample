@@ -47,6 +47,15 @@ class GroupChannelRouteState extends State<GroupChannelRoute> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        floatingActionButton: FloatingActionButton(
+          onPressed: () =>
+              Get.toNamed('/CreateChannelRoute', arguments: [ChannelType.group])
+                  ?.then((value) {
+            setState(() {});
+          }),
+          backgroundColor: Colors.purple[800],
+          child: const Icon(Icons.add),
+        ),
         appBar: appBarComponent(
             title: 'Group Channel Route', includeLeading: false),
         body: paddingComponent(

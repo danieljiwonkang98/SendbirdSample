@@ -1,4 +1,5 @@
 import 'package:app/features_example.dart/features_example_route.dart';
+import 'package:app/main_example.dart/create_channel_route.dart';
 import 'package:app/main_example.dart/groupChannel/group_channel_route.dart';
 import 'package:app/main_example.dart/main_example_route.dart';
 import 'package:app/main_example.dart/openChannel/open_channel_route.dart';
@@ -16,4 +17,5 @@ final List<GetPage> routes = [
   GetPage(name: "/GroupChannelRoute", page: () => const GroupChannelRoute()),
   GetPage(name: "/OpenChannelRoute", page: () => const OpenChannelRoute()),
   GetPage(name: "/ChatRoomRoute", page: () => const ChatRoomRoute()),
+  GetPage(name: "/CreateChannelRoute", page: () => const CreateChannelRoute()),
 ];
