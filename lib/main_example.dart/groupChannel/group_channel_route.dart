@@ -1,0 +1,98 @@
+import 'package:app/components/app_bar.dart';
+import 'package:app/components/padding.dart';
+import 'package:app/controllers/authentication_controller.dart';
+import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:sendbird_sdk/sendbird_sdk.dart';
+
+class GroupChannelRoute extends StatefulWidget {
+  const GroupChannelRoute({Key? key}) : super(key: key);
+
+  @override
+  GroupChannelRouteState createState() => GroupChannelRouteState();
+}
+
+class GroupChannelRouteState extends State<GroupChannelRoute> {
+  final BaseAuth _authentication = Get.find<AuthenticationController>();
+  late List<GroupChannel> _groupChannelList;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+  }
+
+  Future<List<GroupChannel>> loadGroupChannelList() async {
+    try {
+      return await GroupChannelListQuery().loadNext();
+    } catch (e) {
+      throw Exception([e, 'Error Retrieving Group Channel List']);
+    }
+  }
+
+  Widget getGroupChannelIcon(GroupChannel? groupChannel) {
+    if (groupChannel != null) {
+      if (groupChannel.coverUrl != null && groupChannel.coverUrl == '') {
+        return SizedBox.square(child: Image.network(groupChannel.coverUrl!));
+      }
+    }
+
+    return const Icon(Icons.message);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: appBarComponent(
+            title: 'Group Channel Route', includeLeading: false),
+        body: paddingComponent(
+          widget: SingleChildScrollView(
+            child: FutureBuilder<List<GroupChannel>>(
+              future: loadGroupChannelList(),
+              builder: (
+                BuildContext context,
+                AsyncSnapshot<List<GroupChannel>> groupChannelList,
+              ) {
+                if (groupChannelList.hasData) {
+                  return ListView.builder(
+                    itemCount: groupChannelList.data?.length,
+                    shrinkWrap: true,
+                    itemBuilder: (BuildContext context, int index) {
+                      return ListTile(
+                        leading:
+                            getGroupChannelIcon(groupChannelList.data?[index]),
+                        title: Text(
+                          groupChannelList.data?[index].name ?? 'No Name',
+                        ),
+                        onTap: () {
+                          Get.toNamed(
+                            '/ChatRoomRoute',
+                            arguments: [ChannelType.group],
+                            parameters: {
+                              'channelUrl':
+                                  groupChannelList.data?[index].channelUrl ?? ''
+                            },
+                          )?.then((value) {
+                            setState(() {});
+                          });
+                        },
+                      );
+                    },
+                  );
+                } else if (groupChannelList.hasError) {
+                  return const Text('Error Retrieving Group Channel');
+                } else {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+              },
+            ),
+          ),
+        ));
+  }
+}
