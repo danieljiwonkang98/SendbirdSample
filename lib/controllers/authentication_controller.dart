@@ -42,6 +42,7 @@ class AuthenticationController extends GetxController implements BaseAuth {
     String? wsHost,
   }) async {
     try {
+      _sendbird.addChannelEventHandler('ChannelHandler', ChannelEventHandler());
       return await _sendbird.connect(
         userId,
         nickname: nickName,
@@ -56,6 +57,7 @@ class AuthenticationController extends GetxController implements BaseAuth {
 
   @override
   Future<void> logout() async {
+    _sendbird.removeChannelEventHandler('ChannelHandler');
     try {
       await _sendbird.disconnect();
     } catch (e) {

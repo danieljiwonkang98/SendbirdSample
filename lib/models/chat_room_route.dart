@@ -1,7 +1,9 @@
 import 'package:app/components/app_bar.dart';
+import 'package:app/components/dialog.dart';
 import 'package:app/components/message_field.dart';
 import 'package:app/components/padding.dart';
 import 'package:app/controllers/authentication_controller.dart';
+import 'package:app/requests/message_requests.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sendbird_sdk/sendbird_sdk.dart';
@@ -19,7 +21,7 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
   final ChannelType _channelType = Get.arguments[0];
   late final ScrollController _scrollController;
   late final TextEditingController _messageController;
-  GroupChannel? _groupchannel;
+  BaseChannel? _channel;
 
   @override
   void initState() {
@@ -46,11 +48,20 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
   Future<List<BaseMessage>> _initialize() async {
     try {
       if (_channelUrl == null) throw Exception('ChannelUrl is Null');
-      _groupchannel ??= await GroupChannel.getChannel(_channelUrl!);
-
-      return await PreviousMessageListQuery(
+      List<BaseMessage> messageList = await PreviousMessageListQuery(
               channelType: _channelType, channelUrl: _channelUrl!)
           .loadNext();
+      switch (_channelType) {
+        case ChannelType.group:
+          _channel ??= await GroupChannel.getChannel(_channelUrl!);
+          (_channel as GroupChannel).markAsRead();
+          break;
+        case ChannelType.open:
+          _channel ??= await OpenChannel.getChannel(_channelUrl!);
+          break;
+      }
+
+      return messageList;
     } catch (e) {
       rethrow;
     }
@@ -58,6 +69,20 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
 
   Future<void> refresh() async {
     setState(() {});
+  }
+
+  Widget _infoButton() {
+    return Padding(
+      padding: const EdgeInsets.only(right: 20),
+      child: GestureDetector(
+        onTap: () {
+          Get.toNamed('/ChatDetailRoute', arguments: [_channel])?.then((_) {
+            setState(() {});
+          });
+        },
+        child: const Icon(Icons.info),
+      ),
+    );
   }
 
   @override
@@ -69,9 +94,12 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
         if (messages.hasData) {
           _scrollToBottom();
           return Scaffold(
-            appBar: appBarComponent(title: 'Chat Room', includeLeading: false),
+            appBar: appBarComponent(
+                title: 'Chat Room',
+                includeLeading: false,
+                actions: [_infoButton()]),
             bottomNavigationBar: messageField(_messageController,
-                channel: _groupchannel!, onSend: refresh),
+                channel: _channel!, onSend: refresh),
             body: SingleChildScrollView(
               physics: const ScrollPhysics(),
               controller: _scrollController,
@@ -91,13 +119,37 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
                               _authentication.currentUser?.userId
                           ? const Icon(Icons.person)
                           : null,
-                      subtitle: Text(
+                      title: Text(
                         messages.data?[index].message ?? 'Empty Text',
                         textAlign: messages.data?[index].sender?.userId ==
                                 _authentication.currentUser?.userId
                             ? TextAlign.right
                             : TextAlign.left,
                       ),
+                      //TODO need to fix style
+                      //TODO Check if get unread members number is correct
+                      subtitle: _channel!.channelType == ChannelType.group
+                          ? Text(
+                              (_channel as GroupChannel)
+                                  .getUnreadMembers(messages.data![index])
+                                  .length
+                                  .toString(),
+                            )
+                          : null,
+                      onLongPress: () {
+                        dialogComponent(
+                          context,
+                          buttonText1: 'Edit',
+                          onTap1: () {},
+                          buttonText2: 'Delete',
+                          onTap2: () async {
+                            await deleteMessage(
+                              channel: _channel,
+                              messageId: messages.data![index].messageId,
+                            );
+                          },
+                        );
+                      },
                     );
                   },
                 ),

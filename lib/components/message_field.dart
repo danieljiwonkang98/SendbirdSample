@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:sendbird_sdk/sendbird_sdk.dart';
 
 Widget messageField(TextEditingController controller,
-    {required GroupChannel channel, required VoidCallback onSend}) {
+    {required BaseChannel channel, required VoidCallback onSend}) {
   return Padding(
     padding: const EdgeInsets.only(bottom: 40, left: 20),
     child: Row(

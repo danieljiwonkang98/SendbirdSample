@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 enum DialogType {
   oneButton,
@@ -17,9 +18,9 @@ Future<void> dialogComponent(
 }) async {
   switch (type) {
     case DialogType.oneButton:
-      return showDialog<void>(
+      showDialog<void>(
         context: context,
-        barrierDismissible: false,
+        barrierDismissible: true,
         builder: (BuildContext context) {
           return AlertDialog(
             title: title == null ? null : Text(title),
@@ -27,16 +28,22 @@ Future<void> dialogComponent(
             actions: <Widget>[
               TextButton(
                 child: Text(buttonText1 ?? 'Approve'),
-                onPressed: () => onTap1,
+                onPressed: () async {
+                  if (onTap1 != null) {
+                    await onTap1();
+                  }
+                  Get.back();
+                },
               ),
             ],
           );
         },
       );
+      break;
     case DialogType.twoButton:
-      return showDialog<void>(
+      showDialog<void>(
         context: context,
-        barrierDismissible: false,
+        barrierDismissible: true,
         builder: (BuildContext context) {
           return AlertDialog(
             title: title == null ? null : Text(title),
@@ -44,15 +51,26 @@ Future<void> dialogComponent(
             actions: <Widget>[
               TextButton(
                 child: Text(buttonText1 ?? 'Approve'),
-                onPressed: () => onTap1,
+                onPressed: () async {
+                  if (onTap1 != null) {
+                    await onTap1();
+                  }
+                  Get.back();
+                },
               ),
               TextButton(
                 child: Text(buttonText2 ?? 'Cancel'),
-                onPressed: () => onTap2,
+                onPressed: () async {
+                  if (onTap2 != null) {
+                    await onTap2();
+                  }
+                  Get.back();
+                },
               ),
             ],
           );
         },
       );
+      break;
   }
 }

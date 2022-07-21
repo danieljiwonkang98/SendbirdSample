@@ -1,6 +1,8 @@
 import 'package:app/components/app_bar.dart';
+import 'package:app/components/dialog.dart';
 import 'package:app/components/padding.dart';
 import 'package:app/controllers/authentication_controller.dart';
+import 'package:app/requests/channel_requests.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sendbird_sdk/sendbird_sdk.dart';
@@ -74,8 +76,28 @@ class GroupChannelRouteState extends State<GroupChannelRoute> {
                       return ListTile(
                         leading:
                             getGroupChannelIcon(groupChannelList.data?[index]),
+                        trailing: GestureDetector(
+                          onTap: () => dialogComponent(
+                            context,
+                            buttonText1: 'Delete',
+                            type: DialogType.oneButton,
+                            onTap1: () async {
+                              await deleteChannel(
+                                      channel: groupChannelList.data![index])
+                                  .then((value) async {
+                                await loadGroupChannelList();
+                                setState(() {});
+                              });
+                            },
+                          ),
+                          child: const Icon(Icons.edit),
+                        ),
                         title: Text(
                           groupChannelList.data?[index].name ?? 'No Name',
+                        ),
+                        subtitle: Text(
+                          groupChannelList.data?[index].lastMessage?.message ??
+                              '',
                         ),
                         onTap: () {
                           Get.toNamed(

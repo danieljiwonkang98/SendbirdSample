@@ -1,7 +1,7 @@
 import 'package:app/components/app_bar.dart';
 import 'package:app/components/padding.dart';
 import 'package:app/controllers/authentication_controller.dart';
-import 'package:app/requests/create_channel.dart';
+import 'package:app/requests/channel_requests.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:sendbird_sdk/sendbird_sdk.dart';
