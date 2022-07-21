@@ -14,6 +14,11 @@ abstract class BaseAuth {
   bool get isSigned;
   Future<void> dispose();
   SendbirdSdk get sendbirdSdk;
+  Future<void> updateCurrentInfo({
+    String? nickName,
+    FileInfo? file,
+    List<String>? preferredLanguage,
+  });
 }
 
 class AuthenticationController extends GetxController implements BaseAuth {
@@ -67,4 +72,21 @@ class AuthenticationController extends GetxController implements BaseAuth {
 
   @override
   SendbirdSdk get sendbirdSdk => _sendbird;
+
+  @override
+  Future<void> updateCurrentInfo({
+    String? nickName,
+    FileInfo? file,
+    List<String>? preferredLanguage,
+  }) async {
+    try {
+      await _sendbird.updateCurrentUserInfo(
+        nickname: nickName,
+        fileInfo: file,
+        preferredLanguages: preferredLanguage,
+      );
+    } catch (e) {
+      throw Exception([e, 'Failed to update current user info.']);
+    }
+  }
 }

@@ -46,6 +46,22 @@ class GroupChannelRouteState extends State<GroupChannelRoute> {
     return const Icon(Icons.message);
   }
 
+  Widget _infoButton() {
+    return Padding(
+      padding: const EdgeInsets.only(right: 20),
+      child: GestureDetector(
+        onTap: () {
+          Get.toNamed('/ProfileRoute')?.then(
+            (_) {
+              setState(() {});
+            },
+          );
+        },
+        child: const Icon(Icons.person),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -59,7 +75,9 @@ class GroupChannelRouteState extends State<GroupChannelRoute> {
           child: const Icon(Icons.add),
         ),
         appBar: appBarComponent(
-            title: 'Group Channel Route', includeLeading: false),
+            title: 'Group Channel Route',
+            includeLeading: false,
+            actions: [_infoButton()]),
         body: paddingComponent(
           widget: SingleChildScrollView(
             child: FutureBuilder<List<GroupChannel>>(
