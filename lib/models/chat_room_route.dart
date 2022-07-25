@@ -98,9 +98,8 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
                 title: 'Chat Room',
                 includeLeading: false,
                 actions: [_infoButton()]),
-            bottomNavigationBar: messageField(
-              _messageController,
-              context: context,
+            bottomNavigationBar: MessageField(
+              controller: _messageController,
               channel: _channel!,
               onSend: refresh,
             ),
