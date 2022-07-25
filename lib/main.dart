@@ -23,6 +23,7 @@ class MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Sendbird Example',
       initialRoute: "MainRoute",
       getPages: routes,

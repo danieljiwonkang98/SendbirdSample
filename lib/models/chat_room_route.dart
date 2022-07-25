@@ -98,8 +98,12 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
                 title: 'Chat Room',
                 includeLeading: false,
                 actions: [_infoButton()]),
-            bottomNavigationBar: messageField(_messageController,
-                channel: _channel!, onSend: refresh),
+            bottomNavigationBar: messageField(
+              _messageController,
+              context: context,
+              channel: _channel!,
+              onSend: refresh,
+            ),
             body: SingleChildScrollView(
               physics: const ScrollPhysics(),
               controller: _scrollController,
@@ -126,14 +130,13 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
                             ? TextAlign.right
                             : TextAlign.left,
                       ),
-                      //TODO need to fix style
-                      //TODO Check if get unread members number is correct
                       subtitle: _channel!.channelType == ChannelType.group
                           ? Text(
-                              (_channel as GroupChannel)
-                                  .getUnreadMembers(messages.data![index])
-                                  .length
-                                  .toString(),
+                              'Unread ${(_channel as GroupChannel).getUnreadMembers(messages.data![index]).length}',
+                              textAlign: messages.data?[index].sender?.userId ==
+                                      _authentication.currentUser?.userId
+                                  ? TextAlign.right
+                                  : TextAlign.left,
                             )
                           : null,
                       onLongPress: () {

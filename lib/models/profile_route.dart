@@ -1,4 +1,5 @@
 import 'package:app/components/app_bar.dart';
+import 'package:app/components/dialog.dart';
 import 'package:app/components/padding.dart';
 import 'package:app/controllers/authentication_controller.dart';
 import 'package:flutter/material.dart';
@@ -44,13 +45,39 @@ class ProfileRouteState extends State<ProfileRoute> {
                   ),
                 ),
               ),
+              const SizedBox(height: 6),
               TextButton(
-                  onPressed: () async {
-                    _authentication.updateCurrentInfo(
+                onPressed: () async {
+                  try {
+                    await _authentication.updateCurrentInfo(
                         nickName: _nameController.value.text);
-                  },
-                  child: const Text('Save')),
-              const SizedBox(height: 60),
+                    if (mounted) {
+                      // ignore: use_build_context_synchronously
+                      dialogComponent(
+                        context,
+                        title: 'Name has been changed',
+                        type: DialogType.oneButton,
+                      );
+                    }
+                  } catch (e) {
+                    printError(info: e.toString());
+                  }
+                },
+                child: const Text('Save'),
+              ),
+              const SizedBox(height: 6),
+              TextButton(
+                onPressed: () async {
+                  try {
+                    await _authentication.logout();
+                    Get.offAllNamed('/MainRoute');
+                  } catch (e) {
+                    printError(info: e.toString());
+                  }
+                },
+                child: const Text('Sign Out'),
+              ),
+              const Spacer(),
             ],
           ),
         ));

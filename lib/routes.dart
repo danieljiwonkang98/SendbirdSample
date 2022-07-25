@@ -1,8 +1,8 @@
-import 'package:app/features_example.dart/features_example_route.dart';
-import 'package:app/main_example.dart/create_channel_route.dart';
-import 'package:app/main_example.dart/groupChannel/group_channel_route.dart';
-import 'package:app/main_example.dart/main_example_route.dart';
-import 'package:app/main_example.dart/openChannel/open_channel_route.dart';
+import 'package:app/features_example/features_example_route.dart';
+import 'package:app/main_examples/create_channel_route.dart';
+import 'package:app/main_examples/groupChannel/group_channel_route.dart';
+import 'package:app/main_examples/main_example_route.dart';
+import 'package:app/main_examples/openChannel/open_channel_route.dart';
 import 'package:app/main_route.dart';
 import 'package:app/models/chat_detail_route.dart';
 import 'package:app/models/chat_room_route.dart';

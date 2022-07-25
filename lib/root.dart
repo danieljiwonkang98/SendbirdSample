@@ -1,10 +1,9 @@
 import 'package:app/controllers/authentication_controller.dart';
-import 'package:app/features_example.dart/features_example_route.dart';
+import 'package:app/features_example/features_example_route.dart';
 import 'package:app/login_route.dart';
+import 'package:app/main_examples/main_example_route.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-
-import 'main_example.dart/main_example_route.dart';
 
 enum AuthStatus { notSignedIn, signedIn }
 
