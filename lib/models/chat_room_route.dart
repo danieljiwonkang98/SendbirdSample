@@ -3,6 +3,7 @@ import 'package:app/components/dialog.dart';
 import 'package:app/components/message_field.dart';
 import 'package:app/components/padding.dart';
 import 'package:app/controllers/authentication_controller.dart';
+import 'package:app/models/edit_message_route.dart';
 import 'package:app/requests/message_requests.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -178,18 +179,44 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
                             )
                           : null,
                       onLongPress: () {
-                        dialogComponent(
-                          context,
-                          buttonText1: 'Edit',
-                          onTap1: () {},
-                          buttonText2: 'Delete',
-                          onTap2: () async {
-                            await deleteMessage(
-                              channel: _channel,
-                              messageId: messages.data![index].messageId,
-                            );
-                          },
-                        );
+                        if (messages.data?[index] is UserMessage) {
+                          dialogComponent(
+                            context,
+                            buttonText1: 'Edit',
+                            onTap1: () async {
+                              Get.to(
+                                EditMessageRoute(
+                                    message:
+                                        messages.data?[index] as UserMessage,
+                                    channel: _channel),
+                              )?.then((value) {
+                                setState(() {});
+                              });
+                            },
+                            buttonText2: 'Delete',
+                            onTap2: () async {
+                              await deleteMessage(
+                                channel: _channel,
+                                messageId: messages.data![index].messageId,
+                              );
+                            },
+                          );
+                        } else if (messages.data?[index] is FileMessage) {
+                          dialogComponent(
+                            context,
+                            type: DialogType.oneButton,
+                            buttonText1: 'Delete',
+                            onTap1: () async {
+                              await deleteMessage(
+                                channel: _channel,
+                                messageId: messages.data![index].messageId,
+                              );
+                            },
+                          );
+                        } else {
+                          printError(info: 'Unknown message type');
+                        }
+                        setState(() {});
                       },
                     );
                   },

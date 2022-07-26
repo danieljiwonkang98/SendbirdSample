@@ -22,7 +22,7 @@ Future<void> deleteMessage({
 Future<void> editUserMessage({
   required channel,
   required int messageId,
-  required params,
+  required UserMessageParams params,
 }) async {
   try {
     switch (channel.channelType) {
