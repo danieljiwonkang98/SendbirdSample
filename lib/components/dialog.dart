@@ -38,7 +38,9 @@ Future<void> dialogComponent(
             ],
           );
         },
-      );
+      ).then((value) {
+        //TODO
+      });
       break;
     case DialogType.twoButton:
       showDialog<void>(
@@ -70,7 +72,9 @@ Future<void> dialogComponent(
             ],
           );
         },
-      );
+      ).then((value) {
+        //TODO
+      });
       break;
   }
 }

@@ -24,11 +24,13 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
   late final ScrollController _scrollController;
   late final TextEditingController _messageController;
   BaseChannel? _channel;
+  late Future<List<BaseMessage>> _messageList;
 
   @override
   void initState() {
     _scrollController = ScrollController();
     _messageController = TextEditingController();
+    _messageList = _getMessageList();
 
     super.initState();
   }
@@ -47,7 +49,7 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
     }
   }
 
-  Future<List<BaseMessage>> _initialize() async {
+  Future<List<BaseMessage>> _getMessageList() async {
     try {
       if (_channelUrl == null) throw Exception('ChannelUrl is Null');
       List<BaseMessage> messageList = await PreviousMessageListQuery(
@@ -62,7 +64,6 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
           _channel ??= await OpenChannel.getChannel(_channelUrl!);
           break;
       }
-
       return messageList;
     } catch (e) {
       rethrow;
@@ -70,7 +71,9 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
   }
 
   Future<void> refresh() async {
-    setState(() {});
+    setState(() {
+      _messageList = _getMessageList();
+    });
   }
 
   Widget _infoButton() {
@@ -90,7 +93,7 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: _initialize(),
+      future: _messageList,
       builder:
           (BuildContext context, AsyncSnapshot<List<BaseMessage>> messages) {
         if (messages.hasData) {
@@ -124,36 +127,34 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
                             : TextAlign.left,
                       );
                     } else if (messages.data?[index] is FileMessage) {
-                      titleWidget = Expanded(
-                        child: Row(
-                          mainAxisAlignment:
-                              messages.data?[index].sender?.userId ==
-                                      _authentication.currentUser?.userId
-                                  ? MainAxisAlignment.end
-                                  : MainAxisAlignment.start,
-                          children: [
-                            CachedNetworkImage(
-                              height: 120,
-                              width: 180,
-                              fit: BoxFit.cover,
-                              imageUrl: (messages.data?[index] as FileMessage)
-                                      .secureUrl ??
-                                  (messages.data?[index] as FileMessage).url,
-                              placeholder: (context, url) => const SizedBox(
-                                width: 30,
-                                height: 30,
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                        Colors.white),
-                                  ),
+                      titleWidget = Row(
+                        mainAxisAlignment:
+                            messages.data?[index].sender?.userId ==
+                                    _authentication.currentUser?.userId
+                                ? MainAxisAlignment.end
+                                : MainAxisAlignment.start,
+                        children: [
+                          CachedNetworkImage(
+                            height: 120,
+                            width: 180,
+                            fit: BoxFit.cover,
+                            imageUrl: (messages.data?[index] as FileMessage)
+                                    .secureUrl ??
+                                (messages.data?[index] as FileMessage).url,
+                            placeholder: (context, url) => const SizedBox(
+                              width: 30,
+                              height: 30,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                 ),
                               ),
-                              errorWidget: (context, url, error) =>
-                                  const Icon(Icons.error),
                             ),
-                          ],
-                        ),
+                            errorWidget: (context, url, error) =>
+                                const Icon(Icons.error),
+                          ),
+                        ],
                       );
                     } else {
                       printError(info: 'Unknown Message Type');
@@ -184,13 +185,18 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
                             context,
                             buttonText1: 'Edit',
                             onTap1: () async {
-                              Get.to(
-                                EditMessageRoute(
-                                    message:
-                                        messages.data?[index] as UserMessage,
-                                    channel: _channel),
-                              )?.then((value) {
-                                setState(() {});
+                              await Navigator.of(context)
+                                  .push(
+                                MaterialPageRoute(
+                                  builder: ((context) => EditMessageRoute(
+                                        message: messages.data?[index]
+                                            as UserMessage,
+                                        channel: _channel,
+                                      )),
+                                ),
+                              )
+                                  .then((value) async {
+                                refresh();
                               });
                             },
                             buttonText2: 'Delete',
@@ -199,6 +205,7 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
                                 channel: _channel,
                                 messageId: messages.data![index].messageId,
                               );
+                              refresh();
                             },
                           );
                         } else if (messages.data?[index] is FileMessage) {
@@ -211,6 +218,7 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
                                 channel: _channel,
                                 messageId: messages.data![index].messageId,
                               );
+                              refresh();
                             },
                           );
                         } else {
