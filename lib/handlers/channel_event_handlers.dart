@@ -10,30 +10,35 @@ class ChannelEventHandlers with ChannelEventHandler {
   String channelUrl;
   late BaseChannel channel;
   late PreviousMessageListQuery _messageListQuery;
+  ChannelType channelType;
 
   ChannelEventHandlers({
     VoidCallback? refresh,
     required this.channelUrl,
-    required ChannelType channelType,
+    required this.channelType,
   }) {
     _messageListQuery = PreviousMessageListQuery(
-        channelType: channelType, channelUrl: channelUrl);
+        channelType: channelType, channelUrl: channelUrl)
+      ..limit = 5;
     callback = refresh;
     _authentication.sendbirdSdk
         .addChannelEventHandler('ChannelEventHandler', this);
     getChannel(channelUrl, channelType: channelType);
   }
 
-  void getChannel(String channelUrl, {required ChannelType channelType}) async {
+  Future<BaseChannel> getChannel(String channelUrl,
+      {required ChannelType channelType}) async {
     switch (channelType) {
       case ChannelType.group:
         channel = await GroupChannel.getChannel(channelUrl);
-        (channel as GroupChannel).markAsRead();
+        //TODO
+        // (channel as GroupChannel).markAsRead();
         break;
       case ChannelType.open:
         channel = await OpenChannel.getChannel(channelUrl);
         break;
     }
+    return channel;
   }
 
   void dispose() {
@@ -59,7 +64,12 @@ class ChannelEventHandlers with ChannelEventHandler {
 
   @override
   void onMessageUpdated(BaseChannel channel, BaseMessage message) {
-    print('on Update');
+    for (int i = 0; i < messages.length; i++) {
+      if (messages[i].messageId == message.messageId) {
+        messages[i] = message;
+      }
+    }
+
     if (callback != null) {
       callback!();
     }
@@ -67,16 +77,41 @@ class ChannelEventHandlers with ChannelEventHandler {
 
   @override
   void onMessageDeleted(BaseChannel channel, int messageId) {
-    print('on Delete');
+    for (int i = 0; i < messages.length; i++) {
+      if (messages[i].messageId == messageId) {
+        messages.removeAt(i);
+      }
+    }
+
     if (callback != null) {
       callback!();
     }
   }
 
-  Future<List<BaseMessage>> loadMessages() async {
+  Future<List<BaseMessage>> loadMessages({bool isForce = false}) async {
+    if (isForce) {
+      messages = RxList.empty(growable: true);
+      _messageListQuery = PreviousMessageListQuery(
+        channelType: channelType,
+        channelUrl: channelUrl,
+      )..limit = 5;
+    }
+
     List<BaseMessage> messageList = await _messageListQuery.loadNext();
-    for (int i = messageList.length - 1; i >= 0; i--) {
-      messages.add(messageList[i]);
+
+    //TODO refactor
+    if (isForce) {
+      for (var message in messageList) {
+        messages.add(message);
+      }
+    } else {
+      for (int i = messageList.length - 1; i >= 0; i--) {
+        messages.insert(0, messageList[i]);
+      }
+    }
+
+    if (callback != null) {
+      callback!();
     }
 
     return messages;

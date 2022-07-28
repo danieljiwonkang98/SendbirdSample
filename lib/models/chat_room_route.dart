@@ -26,9 +26,7 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
   late final ScrollController _scrollController;
   late final TextEditingController _messageController;
   BaseChannel? _channel;
-  List<BaseMessage> messageList = [];
-  late Future<List<BaseMessage>>? _futureMessageList;
-  late PreviousMessageListQuery _futureMessageListQuery;
+  late Future<BaseChannel>? _futureChannel;
   late final ChannelEventHandlers _channelHandler;
 
   @override
@@ -36,15 +34,19 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
     _scrollController = ScrollController();
     _messageController = TextEditingController();
     _channelHandler = ChannelEventHandlers(
-      refresh: _refreshMessages,
+      refresh: refresh,
       channelUrl: _channelUrl!,
       channelType: _channelType,
     );
 
-    _futureMessageListQuery = PreviousMessageListQuery(
-        channelType: _channelType, channelUrl: _channelUrl!)
-      ..limit = 2;
-    _futureMessageList = _loadPreviousMessage();
+    _futureChannel = _channelHandler
+        .getChannel(_channelUrl!, channelType: _channelType)
+        .then((channel) {
+      _channelHandler.loadMessages(isForce: true);
+
+      _channel = channel;
+      return channel;
+    });
 
     super.initState();
   }
@@ -64,62 +66,35 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
     }
   }
 
-  Future<List<BaseMessage>> _loadPreviousMessage() async {
-    try {
-      if (_channelUrl == null) throw Exception('ChannelUrl is Null');
-
-      List<BaseMessage> messageList = await _futureMessageListQuery.loadNext();
-      for (int i = messageList.length - 1; i >= 0; i--) {
-        this.messageList.add(messageList[i]);
-      }
-      switch (_channelType) {
-        case ChannelType.group:
-          _channel ??= await GroupChannel.getChannel(_channelUrl!);
-          (_channel as GroupChannel).markAsRead();
-          break;
-        case ChannelType.open:
-          _channel ??= await OpenChannel.getChannel(_channelUrl!);
-          break;
-      }
-      return messageList;
-    } catch (e) {
-      rethrow;
+  Future<void> refresh({
+    bool loadPrevious = false,
+    bool isForce = false,
+  }) async {
+    //TODO check
+    switch (_channelType) {
+      case ChannelType.group:
+        _channel ??= await GroupChannel.getChannel(_channelUrl!);
+        //TODO
+        // (_channel as GroupChannel).markAsRead();
+        break;
+      case ChannelType.open:
+        _channel ??= await OpenChannel.getChannel(_channelUrl!);
+        break;
     }
-  }
 
-  Future<void> _refreshMessages() async {
-    try {
-      if (_channelUrl == null) throw Exception('ChannelUrl is Null');
-
-      messageList = await (PreviousMessageListQuery(
-              channelType: _channelType, channelUrl: _channelUrl!)
-            ..limit = 2)
-          .loadNext();
-
-      switch (_channelType) {
-        case ChannelType.group:
-          _channel ??= await GroupChannel.getChannel(_channelUrl!);
-          (_channel as GroupChannel).markAsRead();
-          break;
-        case ChannelType.open:
-          _channel ??= await OpenChannel.getChannel(_channelUrl!);
-          break;
+    if (mounted) {
+      if (loadPrevious) {
+        _channelHandler.loadMessages();
+      } else if (isForce) {
+        _channelHandler.loadMessages(isForce: true);
       }
-    } catch (e) {
-      rethrow;
     }
     setState(() {});
-    return;
   }
 
-  Future<void> refresh({bool loadPrevious = false}) async {
-    setState(() {
-      if (loadPrevious) {
-        _futureMessageList = _loadPreviousMessage();
-      } else {
-        _refreshMessages();
-      }
-    });
+  Future<void> messageSent() async {
+    _scrollToBottom();
+    await refresh(isForce: true);
   }
 
   Widget _infoButton() {
@@ -139,9 +114,8 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
-      future: _futureMessageList,
-      builder:
-          (BuildContext context, AsyncSnapshot<List<BaseMessage>> messages) {
+      future: _futureChannel,
+      builder: (BuildContext context, AsyncSnapshot<BaseChannel> messages) {
         if (messages.hasData) {
           _scrollToBottom();
           return Scaffold(
@@ -152,45 +126,50 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
             bottomNavigationBar: MessageField(
               controller: _messageController,
               channel: _channel!,
-              onSend: refresh,
+              onSend: messageSent,
             ),
             body: LiquidPullToRefresh(
               onRefresh: () => refresh(loadPrevious: true), // refresh callback
               child: ListView(
+                // controller: _scrollController,
                 children: [
                   SingleChildScrollView(
                     physics: const ScrollPhysics(),
-                    controller: _scrollController,
                     child: paddingComponent(
                       widget: ListView.builder(
                         physics: const NeverScrollableScrollPhysics(),
                         shrinkWrap: true,
-                        itemCount: messageList.length,
+                        itemCount: _channelHandler.messages.length,
                         itemBuilder: (BuildContext context, int index) {
                           Widget? titleWidget;
-                          if (messageList[index] is UserMessage) {
+                          if (_channelHandler.messages[index] is UserMessage) {
                             titleWidget = Text(
-                              messageList[index].message,
-                              textAlign: messageList[index].sender?.userId ==
+                              _channelHandler.messages[index].message,
+                              textAlign: _channelHandler
+                                          .messages[index].sender?.userId ==
                                       _authentication.currentUser?.userId
                                   ? TextAlign.right
                                   : TextAlign.left,
                             );
-                          } else if (messageList[index] is FileMessage) {
+                          } else if (_channelHandler.messages[index]
+                              is FileMessage) {
                             titleWidget = Row(
-                              mainAxisAlignment:
-                                  messageList[index].sender?.userId ==
-                                          _authentication.currentUser?.userId
-                                      ? MainAxisAlignment.end
-                                      : MainAxisAlignment.start,
+                              mainAxisAlignment: _channelHandler
+                                          .messages[index].sender?.userId ==
+                                      _authentication.currentUser?.userId
+                                  ? MainAxisAlignment.end
+                                  : MainAxisAlignment.start,
                               children: [
                                 CachedNetworkImage(
                                   height: 120,
                                   width: 180,
                                   fit: BoxFit.cover,
-                                  imageUrl: (messageList[index] as FileMessage)
+                                  imageUrl: (_channelHandler.messages[index]
+                                              as FileMessage)
                                           .secureUrl ??
-                                      (messageList[index] as FileMessage).url,
+                                      (_channelHandler.messages[index]
+                                              as FileMessage)
+                                          .url,
                                   placeholder: (context, url) => const SizedBox(
                                     width: 30,
                                     height: 30,
@@ -212,28 +191,30 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
                           }
                           return ListTile(
                             isThreeLine: true,
-                            leading: messageList[index].sender?.userId ==
+                            leading: _channelHandler
+                                        .messages[index].sender?.userId ==
                                     _authentication.currentUser?.userId
                                 ? null
                                 : const Icon(Icons.person),
-                            trailing: messageList[index].sender?.userId ==
+                            trailing: _channelHandler
+                                        .messages[index].sender?.userId ==
                                     _authentication.currentUser?.userId
                                 ? const Icon(Icons.person)
                                 : null,
                             title: titleWidget,
                             subtitle: _channel!.channelType == ChannelType.group
                                 ? Text(
-                                    'Unread ${(_channel as GroupChannel).getUnreadMembers(messageList[index]).length}',
-                                    textAlign: messageList[index]
-                                                .sender
-                                                ?.userId ==
+                                    'Unread ${(_channel as GroupChannel).getUnreadMembers(_channelHandler.messages[index]).length}',
+                                    textAlign: _channelHandler.messages[index]
+                                                .sender?.userId ==
                                             _authentication.currentUser?.userId
                                         ? TextAlign.right
                                         : TextAlign.left,
                                   )
                                 : null,
                             onLongPress: () {
-                              if (messageList[index] is UserMessage) {
+                              if (_channelHandler.messages[index]
+                                  is UserMessage) {
                                 dialogComponent(
                                   context,
                                   buttonText1: 'Edit',
@@ -242,7 +223,8 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
                                         .push(
                                       MaterialPageRoute(
                                         builder: ((context) => EditMessageRoute(
-                                              message: messageList[index]
+                                              message: _channelHandler
+                                                      .messages[index]
                                                   as UserMessage,
                                               channel: _channel,
                                             )),
@@ -256,12 +238,14 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
                                   onTap2: () async {
                                     await deleteMessage(
                                       channel: _channel,
-                                      messageId: messageList[index].messageId,
+                                      messageId: _channelHandler
+                                          .messages[index].messageId,
                                     );
                                     refresh();
                                   },
                                 );
-                              } else if (messageList[index] is FileMessage) {
+                              } else if (_channelHandler.messages[index]
+                                  is FileMessage) {
                                 dialogComponent(
                                   context,
                                   type: DialogType.oneButton,
@@ -269,7 +253,8 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
                                   onTap1: () async {
                                     await deleteMessage(
                                       channel: _channel,
-                                      messageId: messageList[index].messageId,
+                                      messageId: _channelHandler
+                                          .messages[index].messageId,
                                     );
                                     refresh();
                                   },
