@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import 'package:sendbird_sdk/request/channel/file_upload_request.dart';
 import 'package:sendbird_sdk/sendbird_sdk.dart';
 
 abstract class BaseAuth {

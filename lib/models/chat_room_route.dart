@@ -43,12 +43,23 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
         .getChannel(_channelUrl!, channelType: _channelType)
         .then((channel) {
       _channelHandler.loadMessages(isForce: true);
+      if (channel is GroupChannel) {
+        channel.markAsRead();
+      }
 
       _channel = channel;
       return channel;
     });
 
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    if (_channel is GroupChannel) {
+      (_channel as GroupChannel).markAsRead();
+    }
+    super.didChangeDependencies();
   }
 
   @override
@@ -74,8 +85,6 @@ class ChatRoomRouteState extends State<ChatRoomRoute> {
     switch (_channelType) {
       case ChannelType.group:
         _channel ??= await GroupChannel.getChannel(_channelUrl!);
-        //TODO
-        // (_channel as GroupChannel).markAsRead();
         break;
       case ChannelType.open:
         _channel ??= await OpenChannel.getChannel(_channelUrl!);
